@@ -68,21 +68,21 @@ class SendController extends Controller implements HasMiddleware
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Send $send)
-    {
-        return view('sends.edit', compact('send'));
-    }
+//    public function edit(Send $send)
+//    {
+//        return view('sends.edit', compact('send'));
+//    }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateSendRequest $request, Send $send)
-    {
-        $this->sendService->updateSend($send->getKey(), $request->validated());
-
-        return redirect()->route('dashboard')
-            ->with('success', 'Send updated successfully.');
-    }
+//    public function update(UpdateSendRequest $request, Send $send)
+//    {
+//        $this->sendService->updateSend($send->getKey(), $request->validated());
+//
+//        return redirect()->route('dashboard')
+//            ->with('success', 'Send updated successfully.');
+//    }
 
     /**
      * Remove the specified resource from storage.

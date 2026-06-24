@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Relations\BelongsToManyWithBinaryUlidParentKey;
 use App\Models\Traits\HasPublicAndPrivateIds;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\AsBinary;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\BinaryCodec;
 use Illuminate\Support\Str;
 
@@ -83,11 +86,38 @@ class Send extends Model
 
     /**
      * The users authorized for this send.
+     *
+     * @return BelongsToMany<User, $this, SendUser>
      */
-    public function authorizedUsers()
+    public function authorizedUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'send_user')
             ->using(SendUser::class);
+    }
+
+    /**
+     * @return BelongsToMany<User, $this, SendUser>
+     */
+    protected function newBelongsToMany(
+        Builder $query,
+        Model $parent,
+        $table,
+        $foreignPivotKey,
+        $relatedPivotKey,
+        $parentKey,
+        $relatedKey,
+        $relationName = null,
+    ): BelongsToMany {
+        return new BelongsToManyWithBinaryUlidParentKey(
+            $query,
+            $parent,
+            $table,
+            $foreignPivotKey,
+            $relatedPivotKey,
+            $parentKey,
+            $relatedKey,
+            $relationName,
+        );
     }
 
     /**

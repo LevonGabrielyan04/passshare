@@ -58,12 +58,12 @@
                                         <flux:link :href="route('sends.show', $send)" wire:navigate>
                                             {{ __('View') }}
                                         </flux:link>
-                                        @can('update', $send)
-                                            <span class="mx-2 text-zinc-300 dark:text-zinc-600">|</span>
-                                            <flux:link :href="route('sends.edit', $send)" wire:navigate>
-                                                {{ __('Edit') }}
-                                            </flux:link>
-                                        @endcan
+{{--                                        @can('update', $send)--}}
+{{--                                            <span class="mx-2 text-zinc-300 dark:text-zinc-600">|</span>--}}
+{{--                                            <flux:link :href="route('sends.edit', $send)" wire:navigate>--}}
+{{--                                                {{ __('Edit') }}--}}
+{{--                                            </flux:link>--}}
+{{--                                        @endcan--}}
                                     </td>
                                 </tr>
                             @endforeach
