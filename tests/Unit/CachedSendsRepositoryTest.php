@@ -8,6 +8,7 @@ use App\Repositories\Interfaces\SendRepositoryInterface;
 use App\Support\SendIndexColumns;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -453,4 +454,70 @@ it('delete forgets only the send cache when the send cannot be found', function 
         ->andReturnTrue();
 
     expect($repository->delete($numericId))->toBeTrue();
+});
+
+it('find uses valid_to as cache expiration when it is sooner than the configured ttl', function () {
+    Carbon::setTestNow(now());
+    config(['send.cache_ttl' => 60]);
+
+    $send = makeSend();
+    $send->valid_to = now()->addMinutes(30);
+
+    [$repository, $innerRepository, $cache] = makeCachedRepository();
+
+    $cache->shouldReceive('get')
+        ->once()
+        ->with("send_{$send->id}")
+        ->andReturnNull();
+
+    $innerRepository->shouldReceive('find')
+        ->once()
+        ->with($send->id)
+        ->andReturn($send);
+
+    $cache->shouldReceive('put')
+        ->once()
+        ->with(
+            "send_{$send->id}",
+            serializeSend($send),
+            Mockery::on(fn (DateTimeInterface $expiresAt): bool => Carbon::parse($expiresAt)->equalTo(now()->addMinutes(30)))
+        );
+
+    $repository->find($send->id);
+});
+
+it('findAll uses the earliest valid_to as cache expiration when it is sooner than the configured ttl', function () {
+    Carbon::setTestNow(now());
+    config(['send.cache_ttl' => 60]);
+
+    $send = makeSend(name: 'Sooner Send');
+    $send->valid_to = now()->addMinutes(45);
+    $otherSend = makeSend(name: 'Later Send', userId: $send->user_id);
+    $otherSend->valid_to = now()->addMinutes(90);
+    $userId = (string) $send->user_id;
+    $columns = indexColumns();
+    $cacheKey = sendsListCacheKey($userId, $columns);
+    $collection = new Collection([$send, $otherSend]);
+
+    [$repository, $innerRepository, $cache] = makeCachedRepository();
+
+    $cache->shouldReceive('get')
+        ->once()
+        ->with($cacheKey)
+        ->andReturnNull();
+
+    $innerRepository->shouldReceive('findAll')
+        ->once()
+        ->with($userId, $columns)
+        ->andReturn($collection);
+
+    $cache->shouldReceive('put')
+        ->once()
+        ->with(
+            $cacheKey,
+            [serializeSend($send), serializeSend($otherSend)],
+            Mockery::on(fn (DateTimeInterface $expiresAt): bool => Carbon::parse($expiresAt)->equalTo(now()->addMinutes(45)))
+        );
+
+    $repository->findAll($userId, $columns);
 });

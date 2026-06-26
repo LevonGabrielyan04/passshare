@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Actions\Interfaces\PreparesSendPivotData;
 use App\DTOs\SendData;
 use App\Enums\TimePeriod;
+use App\Exceptions\SendLimitExceededException;
 use App\Models\Send;
 use App\Models\User;
 use App\Repositories\Interfaces\SendRepositoryInterface;

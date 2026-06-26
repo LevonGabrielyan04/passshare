@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->text('message');
             $table->string('name', 255);
-            $table->dateTime('valid_to');
+            $table->dateTime('valid_to')->index();
             $table->binary('public_id', length: 16, fixed: true)->unique();
 
             $table->unique(['user_id', 'name']);

@@ -9,6 +9,7 @@ use App\Repositories\Interfaces\SendRepositoryInterface;
 use App\Support\SendIndexColumns;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 readonly class CachedSendsRepository implements SendRepositoryInterface
 {
@@ -41,7 +42,7 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
         $send = $this->repository->find($id);
 
         if ($send !== null) {
-            $this->cache->put($cacheKey, $this->serializeSend($send), now()->addMinutes($this->cacheTtl));
+            $this->cache->put($cacheKey, $this->serializeSend($send), $this->cacheExpiresAt($send));
         }
 
         return $send;
@@ -68,7 +69,7 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
         $this->cache->put(
             $cacheKey,
             $this->serializeCollection($collection),
-            now()->addMinutes($this->cacheTtl)
+            $this->cacheExpiresAtForCollection($collection)
         );
 
         return $collection;
@@ -80,7 +81,7 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
     public function create(SendData $data, array $pivotData = []): Send
     {
         $send = $this->repository->create($data, $pivotData);
-        $this->cache->put("send_{$send->id}", $this->serializeSend($send), now()->addMinutes($this->cacheTtl));
+        $this->cache->put("send_{$send->id}", $this->serializeSend($send), $this->cacheExpiresAt($send));
         $this->forgetUserSends((string) $send->user_id, SendIndexColumns::COLUMNS);
 
         return $send;
@@ -92,7 +93,7 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
     public function update(string $id, SendData $data, array $pivotData = []): Send
     {
         $result = $this->repository->update($id, $data, $pivotData);
-        $this->cache->put("send_{$id}", $this->serializeSend($result), now()->addMinutes($this->cacheTtl));
+        $this->cache->put("send_{$id}", $this->serializeSend($result), $this->cacheExpiresAt($result));
         $this->forgetUserSends((string) $result->user_id, SendIndexColumns::COLUMNS);
 
         return $result;
@@ -111,6 +112,22 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
         }
 
         return $this->repository->delete($id);
+    }
+
+    private function cacheExpiresAt(Send $send): \DateTimeInterface
+    {
+        return Carbon::parse($send->valid_to)->min(now()->addMinutes($this->cacheTtl));
+    }
+
+    private function cacheExpiresAtForCollection(Collection $collection): \DateTimeInterface
+    {
+        $expiresAt = now()->addMinutes($this->cacheTtl);
+
+        foreach ($collection as $send) {
+            $expiresAt = $this->cacheExpiresAt($send)->min($expiresAt);
+        }
+
+        return $expiresAt;
     }
 
     /**
