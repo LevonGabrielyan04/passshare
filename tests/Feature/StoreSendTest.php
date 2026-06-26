@@ -25,7 +25,9 @@ it('rejects viewer emails that are not registered users', function () {
             'expire_after' => '1 day',
             'viewers' => ['unknown@example.com'],
         ])
-        ->assertSessionHasErrors('viewers.0');
+        ->assertSessionHasErrors([
+            'viewers.0' => 'Email address number 1 is not found in our registered users table.',
+        ]);
 });
 
 it('rejects messages that exceed the configured max length', function () {

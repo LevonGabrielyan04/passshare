@@ -56,4 +56,14 @@ class SendRequest extends FormRequest
             ],
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'viewers.*.exists' => 'Email address number :position is not found in our registered users table.',
+        ];
+    }
 }

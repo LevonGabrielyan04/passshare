@@ -10,6 +10,7 @@ uses(RefreshDatabase::class);
 it('shows the encryption indicator on the create form', function () {
     $user = User::factory()->create();
     $minLength = config('send.password.min_length');
+    $passwordRules = \Illuminate\Validation\Rules\Password::min(16)->mixedCase()->numbers()->symbols()->toPasswordRulesString();
 
     $this->actingAs($user)
         ->get(route('sends.create'))
@@ -18,6 +19,7 @@ it('shows the encryption indicator on the create form', function () {
         ->assertSee('loading-spinner', false)
         ->assertSee(':disabled="isEncrypting"', false)
         ->assertSee('minlength="'.$minLength.'"', false)
+        ->assertSee('passwordrules="'.$passwordRules.'"', false)
         ->assertSee('x-data="viewerManager"', false)
         ->assertSee('data-min-password-length="'.$minLength.'"', false);
 });

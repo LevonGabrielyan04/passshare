@@ -149,6 +149,7 @@
                             id="password"
                             name="password"
                             minlength="{{ config('send.password.min_length') }}"
+                            passwordrules="{{ \Illuminate\Validation\Rules\Password::min(16)->mixedCase()->numbers()->symbols()->toPasswordRulesString() }}"
                             placeholder="{{ __('Minimum :length characters, or leave blank', ['length' => config('send.password.min_length')]) }}"
                             class="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 pr-10 text-sm shadow-xs focus:border-zinc-500 focus:outline-hidden focus:ring-2 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800"
                             @input="clearPasswordError"
