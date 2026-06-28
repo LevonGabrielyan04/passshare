@@ -1,0 +1,14 @@
+# Optional locally-managed tunnel config (token-based setup via TUNNEL_TOKEN is preferred).
+# Copy credentials from Cloudflare Zero Trust after creating a tunnel:
+#   cp docker/cloudflared/config.yml.example docker/cloudflared/config.yml
+#
+# Mount config + credentials in docker-compose if not using TUNNEL_TOKEN.
+
+tunnel: replace-with-tunnel-uuid
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  - hostname: app.example.com
+    # Tunnel-network origin only (queue/scheduler cannot reach this address).
+    service: http://172.30.200.2:8080
+  - service: http_status:404

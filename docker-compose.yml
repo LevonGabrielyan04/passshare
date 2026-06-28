@@ -1,0 +1,205 @@
+# Docker Compose stack for DropKey (PassShare).
+# Pinned service images use Alpine or LTS patch releases.
+#
+# Production: no host ports — traffic enters via Cloudflare Tunnel only.
+#   ./docker/bin/compose.sh up --tunnel   (requires TUNNEL_TOKEN in .env)
+# Local dev: localhost-only port via docker-compose.dev.yml
+#   ./docker/bin/compose.sh up
+#
+# Secrets are loaded from .env via env_file so literal $ characters in passwords
+# are not mangled by Compose interpolation. Escape $ as $$ only when referencing
+# other variables in .env (e.g. MAIL_FROM_NAME="${APP_NAME}").
+
+x-app-build: &app-build
+  context: .
+  dockerfile: Dockerfile
+  args:
+    NODE_VERSION: 22.18.0-alpine3.21
+    PHP_VERSION: 8.4.22-fpm-alpine3.24
+    COMPOSER_VERSION: 2.8.11
+  secrets:
+    - flux_username
+    - flux_license_key
+
+x-app-env: &app-env
+  LOG_CHANNEL: stderr
+  DB_CONNECTION: mariadb
+  DB_HOST: mariadb
+  DB_PORT: 3306
+  SESSION_DRIVER: redis
+  CACHE_STORE: redis
+  QUEUE_CONNECTION: redis
+  REDIS_CLIENT: phpredis
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+
+services:
+  app:
+    build: *app-build
+    image: passshare-app:latest
+    restart: unless-stopped
+    env_file: .env
+    environment: *app-env
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      backend: {}
+      tunnel:
+        ipv4_address: 172.30.200.2
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run/nginx
+      - /var/lib/nginx
+      - /var/log/nginx
+    volumes:
+      - app-storage:/var/www/html/storage
+      - app-bootstrap-cache:/var/www/html/bootstrap/cache
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 8080) ? 0 : 1);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+
+  queue:
+    build: *app-build
+    image: passshare-app:latest
+    restart: unless-stopped
+    command: ["queue"]
+    env_file: .env
+    environment: *app-env
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      backend: {}
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - app-storage:/var/www/html/storage
+      - app-bootstrap-cache:/var/www/html/bootstrap/cache
+
+  scheduler:
+    build: *app-build
+    image: passshare-app:latest
+    restart: unless-stopped
+    command: ["scheduler"]
+    env_file: .env
+    environment: *app-env
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      backend: {}
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - app-storage:/var/www/html/storage
+      - app-bootstrap-cache:/var/www/html/bootstrap/cache
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.6.0
+    profiles:
+      - tunnel
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run"]
+    env_file: .env
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      tunnel:
+        ipv4_address: 172.30.200.3
+      egress: {}
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  mariadb:
+    image: mariadb:11.8.2-noble
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      backend: {}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+
+  redis:
+    image: redis:7.4.2-alpine3.21
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      backend: {}
+    command:
+      - sh
+      - -c
+      - |
+        if [ -n "$$REDIS_PASSWORD" ]; then
+          exec redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass "$$REDIS_PASSWORD"
+        else
+          exec redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+        fi
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - sh
+        - -c
+        - |
+          if [ -n "$$REDIS_PASSWORD" ]; then
+            redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG
+          else
+            redis-cli ping | grep -q PONG
+          fi
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  backend:
+    driver: bridge
+  tunnel:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.200.0/29
+  egress:
+    driver: bridge
+
+volumes:
+  app-storage:
+  app-bootstrap-cache:
+  mariadb-data:
+  redis-data:
+
+secrets:
+  flux_username:
+    environment: FLUX_USERNAME
+  flux_license_key:
+    environment: FLUX_LICENSE_KEY

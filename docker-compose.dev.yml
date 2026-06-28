@@ -1,0 +1,7 @@
+# Local development only — binds the app to localhost, not all interfaces.
+# Production uses Cloudflare Tunnel instead: ./docker/bin/compose.sh up --tunnel
+
+services:
+  app:
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
