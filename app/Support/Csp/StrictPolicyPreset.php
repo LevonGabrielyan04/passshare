@@ -58,7 +58,10 @@ class StrictPolicyPreset implements Preset
      */
     private function connectSources(): array
     {
-        $sources = $this->allowedOrigins();
+        $sources = [
+            ...$this->allowedOrigins(),
+            'https://api.pwnedpasswords.com',
+        ];
 
         if (in_array(config('app.env'), ['local', 'testing'])) {
             $sources = [...$sources, ...$this->viteDevWebSocketOrigins()];

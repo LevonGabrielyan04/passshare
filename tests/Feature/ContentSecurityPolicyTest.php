@@ -81,6 +81,16 @@ it('allows both localhost and 127.0.0.1 app origins when running locally', funct
     '127.0.0.1 app url' => ['http://127.0.0.1:8000', 'http://localhost:8000'],
 ]);
 
+it('allows the have i been pwned passwords api for connect sources', function () {
+    config(['app.url' => 'https://example.test']);
+
+    $policy = Policy::create([StrictPolicyPreset::class])->getContents();
+
+    expect($policy)
+        ->toContain('connect-src')
+        ->toContain('https://api.pwnedpasswords.com');
+});
+
 it('adds upgrade-insecure-requests when the app url uses https', function () {
     config(['app.url' => 'https://example.test']);
 

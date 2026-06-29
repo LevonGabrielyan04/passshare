@@ -16,11 +16,16 @@ it('shows the encryption indicator on the create form', function () {
         ->assertOk()
         ->assertSee('Encryption in progress', false)
         ->assertSee('loading-spinner', false)
-        ->assertSee(':disabled="isEncrypting"', false)
+        ->assertSee(':disabled="isEncrypting || isCheckingPassword"', false)
         ->assertSee('minlength="'.$minLength.'"', false)
         ->assertSee('passwordrules="'.$passwordRules.'"', false)
         ->assertSee('x-data="viewerManager"', false)
-        ->assertSee('data-min-password-length="'.$minLength.'"', false);
+        ->assertSee('data-min-password-length="'.$minLength.'"', false)
+        ->assertSee('placeholder="Minimum '.$minLength.' characters"', false)
+        ->assertSee('placeholder="Enter a user name and press Enter"', false)
+        ->assertDontSee('Enter an email address and press Enter', false)
+        ->assertDontSee('leave blank', false)
+        ->assertDontSee('(Optional)', false);
 });
 
 // it('shows the encryption indicator on the edit form view', function () {

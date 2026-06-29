@@ -112,7 +112,6 @@
                     <div class="flex items-center gap-2">
                         <label for="password" class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                             {{ __('Password') }}
-                            <span class="font-normal text-zinc-500">({{ __('Optional') }})</span>
                         </label>
 
                         <div x-data="passwordTooltip" class="relative flex items-center">
@@ -136,7 +135,7 @@
                                 class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-52 -translate-x-1/2 rounded-md bg-zinc-900 p-2 text-center text-xs text-white shadow-xl"
                                 x-cloak
                             >
-                                {{ __('If a password is set, the transfer becomes end-to-end encrypted. Passwords must be at least :length characters.', ['length' => config('send.password.min_length')]) }}
+                                {{ __('The transfer is end-to-end encrypted. Passwords must be at least :length characters.', ['length' => config('send.password.min_length')]) }}
                                 <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-900"></div>
                             </div>
                         </div>
@@ -147,9 +146,10 @@
                             :type="showPassword ? 'text' : 'password'"
                             id="password"
                             name="password"
+                            required
                             minlength="{{ config('send.password.min_length') }}"
                             passwordrules="{{ \Illuminate\Validation\Rules\Password::min(16)->mixedCase()->numbers()->symbols()->toPasswordRulesString() }}"
-                            placeholder="{{ __('Minimum :length characters, or leave blank', ['length' => config('send.password.min_length')]) }}"
+                            placeholder="{{ __('Minimum :length characters', ['length' => config('send.password.min_length')]) }}"
                             class="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 pr-10 text-sm shadow-xs focus:border-zinc-500 focus:outline-hidden focus:ring-2 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800"
                             @input="clearPasswordError"
                         />
@@ -176,7 +176,7 @@
                 <button
                     type="submit"
                     class="inline-flex w-full items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
-                    :disabled="isEncrypting"
+                    :disabled="isEncrypting || isCheckingPassword"
                 >
                     {{ __('Generate') }}
                 </button>

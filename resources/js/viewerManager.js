@@ -1,4 +1,5 @@
 import { encryptViaWorker } from './cryptography/encrypt/encryptViaWorker.js';
+import { isPasswordCompromised } from './cryptography/security/isPasswordCompromised.js';
 
 /**
  * Alpine component that manages the list of viewer user names
@@ -15,6 +16,7 @@ document.addEventListener('alpine:init', () => {
         passwordError: '',
         encryptionError: '',
         isEncrypting: false,
+        isCheckingPassword: false,
         maxViewers: 100,
         minPasswordLength: 15,
 
@@ -151,7 +153,7 @@ document.addEventListener('alpine:init', () => {
          * form is submitted without the password field.
          */
         async submitForm(event) {
-            if (this.isEncrypting) {
+            if (this.isEncrypting || this.isCheckingPassword) {
                 return;
             }
 
@@ -175,31 +177,54 @@ document.addEventListener('alpine:init', () => {
             const passwordInput = form.querySelector('[name="password"]');
 
             const plaintext = messageInput?.value ?? '';
-            const password = passwordInput?.value ?? '';
-            let message = plaintext;
+            const password = passwordInput?.value.trim() ?? '';
 
             this.passwordError = '';
             this.encryptionError = '';
 
-            if (password && password.length < this.minPasswordLength) {
+            if (! password) {
+                this.passwordError = 'Password is required.';
+
+                return;
+            }
+
+            if (password.length < this.minPasswordLength) {
                 this.passwordError = `Password must be at least ${this.minPasswordLength} characters.`;
 
                 return;
             }
 
-            if (password) {
-                this.isEncrypting = true;
+            this.isCheckingPassword = true;
 
-                try {
-                    const encrypted = await encryptViaWorker(plaintext, password);
-                    message = JSON.stringify(encrypted);
-                } catch {
-                    this.encryptionError = 'Encryption failed. Your message was not sent. Please try again.';
+            try {
+                const compromised = await isPasswordCompromised(password);
+
+                if (compromised) {
+                    this.passwordError = 'This password has appeared in a data breach. Please choose a different password.';
 
                     return;
-                } finally {
-                    this.isEncrypting = false;
                 }
+            } catch {
+                this.passwordError = 'Unable to verify password safety. Please try again.';
+
+                return;
+            } finally {
+                this.isCheckingPassword = false;
+            }
+
+            let message = plaintext;
+
+            this.isEncrypting = true;
+
+            try {
+                const encrypted = await encryptViaWorker(plaintext, password);
+                message = JSON.stringify(encrypted);
+            } catch {
+                this.encryptionError = 'Encryption failed. Your message was not sent. Please try again.';
+
+                return;
+            } finally {
+                this.isEncrypting = false;
             }
 
             if (messageInput) {
