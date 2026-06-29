@@ -74,3 +74,15 @@ it('redirects unauthenticated users to login', function () {
     $this->get(route('dashboard'))
         ->assertRedirect(route('login'));
 });
+
+it('shows the app name and no starter kit links in the layout', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertSee(config('app.name'), false)
+        ->assertDontSee('Laravel Starter Kit', false)
+        ->assertDontSee('https://github.com/laravel/livewire-starter-kit', false)
+        ->assertDontSee('https://laravel.com/docs/starter-kits#livewire', false);
+});
