@@ -51,3 +51,15 @@ function fakeUncompromisedPasswordChecks(): void
         'api.pwnedpasswords.com/*' => Http::response(''),
     ]);
 }
+
+/**
+ * Build a client-side encrypted message payload for HTTP tests.
+ */
+function fakeEncryptedMessage(int $ciphertextBytes = 32): string
+{
+    return json_encode([
+        'ciphertext' => base64_encode(random_bytes($ciphertextBytes)),
+        'salt' => base64_encode(random_bytes(16)),
+        'iv' => base64_encode(random_bytes(12)),
+    ], JSON_THROW_ON_ERROR);
+}

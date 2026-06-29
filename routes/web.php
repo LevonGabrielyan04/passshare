@@ -10,7 +10,7 @@ Route::middleware(['auth', 'throttle:60,1', 'verified'])->group(function () {
 });
 
 Route::get('/dashboard', [SendController::class, 'index'])
-    ->middleware(['auth', 'throttle:60,1', 'verified'])
+    ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
 require __DIR__.'/settings.php';

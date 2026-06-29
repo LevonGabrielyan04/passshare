@@ -28,7 +28,7 @@ it('lists sends belonging to the authenticated user', function () {
 
     $send = app(SendServiceInterface::class)->createSend([
         'name' => 'My Secret',
-        'message' => 'top secret',
+        'message' => fakeEncryptedMessage(),
         'expire_after' => '1 day',
         'viewers' => [$viewer->name],
     ]);
@@ -57,7 +57,7 @@ it('shows a success message after creating a send', function () {
     $this->actingAs($author)
         ->post(route('sends.store'), [
             'name' => 'My Secret',
-            'message' => 'top secret',
+            'message' => fakeEncryptedMessage(),
             'expire_after' => '1 day',
             'viewers' => [$viewer->name],
         ])

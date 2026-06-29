@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Enums\TimePeriod;
 use App\Models\Send;
 use App\Models\User;
+use App\Rules\EncryptedMessage;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -50,6 +51,7 @@ class SendRequest extends FormRequest
                 'required',
                 'string',
                 'max:'.config('send.message.encrypted_max_length'),
+                new EncryptedMessage,
             ],
             'expire_after' => [
                 'required',

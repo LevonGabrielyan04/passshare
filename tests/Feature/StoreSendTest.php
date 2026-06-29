@@ -8,7 +8,7 @@ it('rejects sends without any viewers', function () {
     $this->actingAs($author)
         ->post(route('sends.store'), [
             'name' => 'My Secret',
-            'message' => 'top secret',
+            'message' => fakeEncryptedMessage(),
             'expire_after' => '1 day',
             'viewers' => [],
         ])
@@ -21,7 +21,7 @@ it('rejects viewer names that are not registered users', function () {
     $this->actingAs($author)
         ->post(route('sends.store'), [
             'name' => 'My Secret',
-            'message' => 'top secret',
+            'message' => fakeEncryptedMessage(),
             'expire_after' => '1 day',
             'viewers' => ['Unknown User'],
         ])
@@ -30,15 +30,32 @@ it('rejects viewer names that are not registered users', function () {
         ]);
 });
 
-it('rejects messages that exceed the configured max length', function () {
+it('rejects plaintext messages', function () {
     $author = User::factory()->create();
     $viewer = User::factory()->create();
-    $maxLength = config('send.message.encrypted_max_length');
 
     $this->actingAs($author)
         ->post(route('sends.store'), [
             'name' => 'My Secret',
-            'message' => str_repeat('a', $maxLength + 1),
+            'message' => 'top secret',
+            'expire_after' => '1 day',
+            'viewers' => [$viewer->name],
+        ])
+        ->assertSessionHasErrors('message');
+});
+
+it('rejects messages that exceed the configured max length', function () {
+    $author = User::factory()->create();
+    $viewer = User::factory()->create();
+    $maxLength = config('send.message.encrypted_max_length');
+    $message = fakeEncryptedMessage(4_000);
+
+    expect(strlen($message))->toBeGreaterThan($maxLength);
+
+    $this->actingAs($author)
+        ->post(route('sends.store'), [
+            'name' => 'My Secret',
+            'message' => $message,
             'expire_after' => '1 day',
             'viewers' => [$viewer->name],
         ])
@@ -52,7 +69,7 @@ it('accepts viewer names that belong to registered users', function () {
     $this->actingAs($author)
         ->post(route('sends.store'), [
             'name' => 'My Secret',
-            'message' => 'top secret',
+            'message' => fakeEncryptedMessage(),
             'expire_after' => '1 day',
             'viewers' => [$viewer->name],
         ])

@@ -12,7 +12,7 @@ function sendLimitPayload(User $viewer, string $name): array
 {
     return [
         'name' => $name,
-        'message' => 'top secret',
+        'message' => fakeEncryptedMessage(),
         'expire_after' => '1 day',
         'viewers' => [$viewer->name],
     ];
