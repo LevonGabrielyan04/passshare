@@ -97,3 +97,18 @@ test('docker compose dev override binds app port to localhost only', function ()
 
     expect($devCompose)->toContain('127.0.0.1:${APP_PORT:-8080}:8080');
 });
+
+test('docker supervisor runs pulse check daemon in app container', function () {
+    $supervisorConfig = file_get_contents(base_path('docker/supervisor/supervisord.conf'));
+
+    expect($supervisorConfig)
+        ->toContain('[program:pulse-check]')
+        ->toContain('command=php artisan pulse:check')
+        ->toContain('user=app');
+});
+
+test('docker compose sets pulse server name for app container', function () {
+    $compose = file_get_contents(base_path('docker-compose.yml'));
+
+    expect($compose)->toContain('PULSE_SERVER_NAME: app');
+});
