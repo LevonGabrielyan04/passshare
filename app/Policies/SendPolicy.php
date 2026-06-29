@@ -23,22 +23,18 @@ class SendPolicy
     /**
      * Determine whether the user allowed creating a new model.
      */
-    public function create(): Response
+    public function create(User $user): Response
     {
-        if (! auth()->check()) {
-            return Response::deny();
-        }
-
         $activeSendCount = Send::query()
-            ->where('user_id', auth()->id())
+            ->where('user_id', $user->id)
             ->where('valid_to', '>=', now())
             ->count();
 
-        $allowed = $activeSendCount < config('send.max_per_user');
+        $maxSends = config('send.max_per_user');
 
-        return $allowed ? Response::allow() :
-            Response::deny('You have exceeded the maximum
-             number of sends ('.config('send.max_per_user').').');
+        return $activeSendCount < $maxSends
+            ? Response::allow()
+            : Response::deny("You have exceeded the maximum number of sends ({$maxSends}).");
     }
 
     /**
@@ -52,7 +48,10 @@ class SendPolicy
 
         return $this->sendResponse(
             $send->user_id === $user->id ||
-            $user->authorizedSends()->where('sends.id', BinaryCodec::encode($send->id, 'ulid'))->exists()
+            $user->authorizedSends()
+                ->where('sends.id', BinaryCodec::encode($send->id, 'ulid'))
+                ->where('valid_to', '>=', now())
+                ->exists()
         );
     }
 

@@ -137,3 +137,17 @@ it('invalidates findAll cache after creating a send', function () {
 
     expect(Cache::has($cacheKey))->toBeFalse();
 });
+
+it('deletes a send by its ulid', function () {
+    $author = User::factory()->create();
+
+    $send = Send::forceCreate([
+        'user_id' => $author->id,
+        'message' => 'secret',
+        'name' => 'Delete Me',
+        'valid_to' => now()->addDay(),
+    ]);
+
+    expect($this->repository->delete($send->id))->toBeTrue()
+        ->and($this->repository->find($send->id))->toBeNull();
+});

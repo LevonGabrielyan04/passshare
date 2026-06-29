@@ -102,9 +102,9 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function delete(int $id): bool
+    public function delete(string $id): bool
     {
-        $send = $this->repository->find((string) $id);
+        $send = $this->repository->find($id);
         $this->cache->forget("send_{$id}");
 
         if ($send !== null) {

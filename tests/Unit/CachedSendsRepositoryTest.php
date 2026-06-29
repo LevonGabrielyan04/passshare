@@ -405,18 +405,17 @@ it('delete invalidates send and user list caches before deleting from the inner 
     $send = makeSend();
     $userId = (string) $send->user_id;
     $columns = indexColumns();
-    $numericId = 42;
 
     [$repository, $innerRepository, $cache] = makeCachedRepository();
 
     $innerRepository->shouldReceive('find')
         ->once()
-        ->with((string) $numericId)
+        ->with($send->id)
         ->andReturn($send);
 
     $cache->shouldReceive('forget')
         ->once()
-        ->with("send_{$numericId}");
+        ->with("send_{$send->id}");
 
     $cache->shouldReceive('forget')
         ->once()
@@ -428,32 +427,32 @@ it('delete invalidates send and user list caches before deleting from the inner 
 
     $innerRepository->shouldReceive('delete')
         ->once()
-        ->with($numericId)
+        ->with($send->id)
         ->andReturnTrue();
 
-    expect($repository->delete($numericId))->toBeTrue();
+    expect($repository->delete($send->id))->toBeTrue();
 });
 
 it('delete forgets only the send cache when the send cannot be found', function () {
-    $numericId = 99;
+    $sendId = (string) Str::ulid();
 
     [$repository, $innerRepository, $cache] = makeCachedRepository();
 
     $innerRepository->shouldReceive('find')
         ->once()
-        ->with((string) $numericId)
+        ->with($sendId)
         ->andReturnNull();
 
     $cache->shouldReceive('forget')
         ->once()
-        ->with("send_{$numericId}");
+        ->with("send_{$sendId}");
 
     $innerRepository->shouldReceive('delete')
         ->once()
-        ->with($numericId)
+        ->with($sendId)
         ->andReturnTrue();
 
-    expect($repository->delete($numericId))->toBeTrue();
+    expect($repository->delete($sendId))->toBeTrue();
 });
 
 it('deleteExpired invalidates send and user list caches before deleting expired sends', function () {

@@ -74,6 +74,24 @@
                                                     <flux:icon.check x-show="copied" variant="solid" class="size-4 text-green-500" />
                                                 </button>
                                             </span>
+                                            @can('forceDelete', $send)
+                                                <form
+                                                    method="POST"
+                                                    action="{{ route('sends.destroy', $send) }}"
+                                                    class="inline-flex"
+                                                    onsubmit="return confirm(@js(__('Are you sure you want to delete this send?')))"
+                                                >
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button
+                                                        type="submit"
+                                                        class="inline-flex cursor-pointer text-zinc-500 transition-colors hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400"
+                                                        title="{{ __('Delete') }}"
+                                                    >
+                                                        <flux:icon.trash variant="outline" class="size-4" />
+                                                    </button>
+                                                </form>
+                                            @endcan
                                         </div>
 {{--                                        @can('update', $send)--}}
 {{--                                            <span class="mx-2 text-zinc-300 dark:text-zinc-600">|</span>--}}

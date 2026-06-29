@@ -39,10 +39,8 @@ interface SendRepositoryInterface
 
     /**
      * Delete a record by its ID.
-     *
-     * @return bool
      */
-    public function delete(int $id);
+    public function delete(string $id): bool;
 
     /**
      * Find sends whose validity has expired.

@@ -6,6 +6,7 @@ use App\DTOs\SendData;
 use App\Models\Send;
 use App\Repositories\Interfaces\SendRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\BinaryCodec;
 use Illuminate\Support\Facades\DB;
 
 class SendRepository implements SendRepositoryInterface
@@ -14,7 +15,10 @@ class SendRepository implements SendRepositoryInterface
 
     public function find(string $id): ?Send
     {
-        return $this->model->with('authorizedUsers')->find($id);
+        return $this->model
+            ->with('authorizedUsers')
+            ->where('id', BinaryCodec::encode($id, 'ulid'))
+            ->first();
     }
 
     public function findAll(string $userId, array $columns): Collection
@@ -68,9 +72,17 @@ class SendRepository implements SendRepositoryInterface
         });
     }
 
-    public function delete(int $id): bool
+    public function delete(string $id): bool
     {
-        return (bool) $this->model->where('id', $id)->delete();
+        $record = $this->model
+            ->where('id', BinaryCodec::encode($id, 'ulid'))
+            ->first();
+
+        if ($record === null) {
+            return false;
+        }
+
+        return (bool) $record->delete();
     }
 
     public function findExpired(): Collection
