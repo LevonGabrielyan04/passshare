@@ -1,6 +1,6 @@
 # DropKey
 
-DropKey is a zero-knowledge, end-to-end encrypted application for sharing passwords and other secrets with specific people. Secrets are encrypted in the browser before they ever reach the server. The server stores only ciphertext and never sees the decryption password.
+DropKey is a end-to-end encrypted application for sharing passwords and other secrets with specific people. Secrets are encrypted in the browser before they ever reach the server. The server stores only ciphertext and never sees the decryption password.
 
 ## How it works
 
