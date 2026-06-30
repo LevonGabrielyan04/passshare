@@ -2,6 +2,8 @@
 
 DropKey is a end-to-end encrypted application for sharing passwords and other secrets with specific people. Secrets are encrypted in the browser before they ever reach the server. The server stores only ciphertext and never sees the decryption password.
 
+**Live:** [https://dropkey.site](https://dropkey.site)
+
 ## How it works
 
 1. **Create a Send** — Give it a name, add up to 100 viewer email addresses, write the secret, and choose when it expires (1 hour to 30 days).
