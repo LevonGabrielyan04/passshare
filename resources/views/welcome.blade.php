@@ -224,11 +224,8 @@
                             ['icon' => 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', 'title' => 'Hardened accounts', 'desc' => 'Passkeys, two-factor authentication, and email verification protect who can access your Sends.'],
                             ['icon' => 'M13 10V3L4 14h7v7l9-11h-7z', 'title' => 'Off-thread crypto', 'desc' => 'Encryption and decryption run in Web Workers so your UI stays responsive during heavy Argon2id operations.'],
                             ['icon' => 'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z', 'title' => 'Defense in depth', 'desc' => 'Strict Content Security Policy, short-lived Redis sessions, and Laravel encrypted casts at rest.'],
-                        ] as $index => $feature)
-                            <div @class([
-                                'group rounded-2xl border border-white/10 bg-[var(--landing-surface)] p-6 transition hover:border-emerald-500/30 hover:bg-[var(--landing-surface-elevated)]',
-                                'lg:mt-6' => $index === 1,
-                            ])>
+                        ] as $feature)
+                            <div class="group h-full rounded-2xl border border-white/10 bg-[var(--landing-surface)] p-6 transition hover:border-emerald-500/30 hover:bg-[var(--landing-surface-elevated)]">
                                 <div class="mb-4 flex size-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/25 transition group-hover:bg-emerald-500/25">
                                     <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $feature['icon'] }}" />
