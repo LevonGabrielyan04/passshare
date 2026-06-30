@@ -209,7 +209,7 @@
             <section id="features" class="py-20 sm:py-28">
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="mx-auto max-w-2xl text-center">
-                        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">TEST TEST TEST</h2>
+                        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Security without the friction</h2>
                         <p class="mt-4 text-lg text-zinc-400">
                             Every layer is designed so your secrets stay yours — from creation to expiry.
                         </p>
