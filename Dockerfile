@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Pinned hardened base images (Alpine 3.24 / LTS patch releases).
-ARG NODE_VERSION=22.18.0-alpine3.21
+ARG NODE_VERSION=24.18.0-alpine3.24
 ARG PHP_VERSION=8.4.22-fpm-alpine3.24
 ARG COMPOSER_VERSION=2.8.11
 
