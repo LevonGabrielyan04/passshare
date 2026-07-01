@@ -9,9 +9,9 @@ use App\Repositories\Eloquent\CachedSendsRepository;
 use App\Repositories\Eloquent\SendRepository;
 use App\Repositories\Interfaces\SendRepositoryInterface;
 use App\Services\Interfaces\SendReadServiceInterface;
-use App\Services\Interfaces\SendServiceInterface;
+use App\Services\Interfaces\SendWriteServiceInterface;
 use App\Services\SendReadService;
-use App\Services\SendService;
+use App\Services\SendWriteService;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Application;
@@ -32,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(SendRepositoryInterface::class, SendRepository::class);
-        $this->app->bind(SendServiceInterface::class, SendService::class);
+        $this->app->bind(SendWriteServiceInterface::class, SendWriteService::class);
         $this->app->bind(SendReadServiceInterface::class, SendReadService::class);
 
         $this->app->extend(SendRepositoryInterface::class, function (SendRepositoryInterface $repository, Application $app) {

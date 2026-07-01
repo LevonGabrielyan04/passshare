@@ -4,7 +4,7 @@ namespace App\Services\Interfaces;
 
 use App\Models\Send;
 
-interface SendServiceInterface
+interface SendWriteServiceInterface
 {
     /**
      * Create a new secure send from the given request data.
@@ -19,4 +19,9 @@ interface SendServiceInterface
      * @param  array<string, mixed>  $data
      */
     public function updateSend(string $id, array $data): Send|bool;
+
+    /**
+     * Delete a send by its ID.
+     */
+    public function deleteSend(string $id): bool;
 }

@@ -38,7 +38,7 @@ it('throttles store requests after ten per minute', function () {
 //    $viewer = User::factory()->create();
 //    $this->actingAs($author);
 //
-//    $send = app(SendServiceInterface::class)->createSend(validSendPayload($viewer, 'Editable Send'));
+//    $send = app(SendWriteServiceInterface::class)->createSend(validSendPayload($viewer, 'Editable Send'));
 //
 //    for ($i = 0; $i < 10; $i++) {
 //        $this->actingAs($author)
@@ -56,7 +56,7 @@ it('throttles store requests after ten per minute', function () {
 //    $viewer = User::factory()->create();
 //    $this->actingAs($author);
 //
-//    $send = app(SendServiceInterface::class)->createSend(validSendPayload($viewer, 'Updatable Send'));
+//    $send = app(SendWriteServiceInterface::class)->createSend(validSendPayload($viewer, 'Updatable Send'));
 //
 //    for ($i = 0; $i < 10; $i++) {
 //        $response = $this->actingAs($author)

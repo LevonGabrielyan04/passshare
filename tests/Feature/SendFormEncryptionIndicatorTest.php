@@ -33,7 +33,7 @@ it('shows the encryption indicator on the create form', function () {
 //    $viewer = User::factory()->create();
 //    $this->actingAs($author);
 //
-//    $send = app(SendServiceInterface::class)->createSend([
+//    $send = app(SendWriteServiceInterface::class)->createSend([
 //        'name' => 'Editable',
 //        'message' => 'secret',
 //        'expire_after' => '1 day',

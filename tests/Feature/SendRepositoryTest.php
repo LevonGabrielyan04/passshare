@@ -5,7 +5,7 @@ use App\Models\Send;
 use App\Models\User;
 use App\Repositories\Eloquent\SendRepository;
 use App\Repositories\Interfaces\SendRepositoryInterface;
-use App\Services\Interfaces\SendServiceInterface;
+use App\Services\Interfaces\SendWriteServiceInterface;
 use App\Support\SendIndexColumns;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -129,7 +129,7 @@ it('invalidates findAll cache after creating a send', function () {
 
     expect(Cache::has($cacheKey))->toBeTrue();
 
-    app(SendServiceInterface::class)->createSend([
+    app(SendWriteServiceInterface::class)->createSend([
         'name' => 'New Send',
         'message' => 'secret',
         'expire_after' => '1 day',

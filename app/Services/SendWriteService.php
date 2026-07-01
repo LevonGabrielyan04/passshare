@@ -8,12 +8,12 @@ use App\Enums\TimePeriod;
 use App\Models\Send;
 use App\Models\User;
 use App\Repositories\Interfaces\SendRepositoryInterface;
-use App\Services\Interfaces\SendServiceInterface;
+use App\Services\Interfaces\SendWriteServiceInterface;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
-class SendService implements SendServiceInterface
+class SendWriteService implements SendWriteServiceInterface
 {
     public function __construct(
         protected SendRepositoryInterface $sendRepository,
@@ -38,6 +38,11 @@ class SendService implements SendServiceInterface
         $pivotData = $this->prepareSendPivotData->execute($id, $viewerIds->values()->all());
 
         return $this->sendRepository->update($id, $sendData, $pivotData);
+    }
+
+    public function deleteSend(string $id): bool
+    {
+        return $this->sendRepository->delete($id);
     }
 
     private function calculateExpiration(string $expire_after): CarbonInterface

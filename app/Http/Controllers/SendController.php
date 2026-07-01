@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreSendRequest;
 use App\Models\Send;
-use App\Repositories\Interfaces\SendRepositoryInterface;
 use App\Services\Interfaces\SendReadServiceInterface;
-use App\Services\Interfaces\SendServiceInterface;
+use App\Services\Interfaces\SendWriteServiceInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -14,9 +13,10 @@ use Illuminate\View\View;
 
 class SendController extends Controller implements HasMiddleware
 {
-    public function __construct(private readonly SendRepositoryInterface $sendRepository,
-        private readonly SendServiceInterface $sendService,
-        private readonly SendReadServiceInterface $sendReadService) {}
+    public function __construct(
+        private readonly SendWriteServiceInterface $sendService,
+        private readonly SendReadServiceInterface  $sendReadService
+    ) {}
 
     public static function middleware(): array
     {
@@ -89,7 +89,7 @@ class SendController extends Controller implements HasMiddleware
      */
     public function destroy(Send $send): RedirectResponse
     {
-        $this->sendRepository->delete($send->getKey());
+        $this->sendService->deleteSend($send->getKey());
 
         return redirect()->route('dashboard')
             ->with('success', 'Send deleted successfully.');

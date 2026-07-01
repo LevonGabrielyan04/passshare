@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\User;
-use App\Services\Interfaces\SendServiceInterface;
+use App\Services\Interfaces\SendWriteServiceInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Cache;
@@ -12,7 +12,7 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     Cache::flush();
 
-    $this->service = app(SendServiceInterface::class);
+    $this->service = app(SendWriteServiceInterface::class);
 });
 
 /**

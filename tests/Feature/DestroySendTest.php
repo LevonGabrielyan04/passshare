@@ -2,13 +2,13 @@
 
 use App\Models\User;
 use App\Repositories\Interfaces\SendRepositoryInterface;
-use App\Services\Interfaces\SendServiceInterface;
+use App\Services\Interfaces\SendWriteServiceInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->service = app(SendServiceInterface::class);
+    $this->service = app(SendWriteServiceInterface::class);
     $this->repository = app(SendRepositoryInterface::class);
 });
 

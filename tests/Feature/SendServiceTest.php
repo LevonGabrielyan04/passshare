@@ -2,13 +2,13 @@
 
 use App\Models\Send;
 use App\Models\User;
-use App\Services\Interfaces\SendServiceInterface;
+use App\Services\Interfaces\SendWriteServiceInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->service = app(SendServiceInterface::class);
+    $this->service = app(SendWriteServiceInterface::class);
 });
 
 it('creates a send from the given data and records its viewers', function () {
@@ -35,5 +35,23 @@ it('creates a send from the given data and records its viewers', function () {
 
     $this->assertDatabaseHas('send_user', [
         'user_id' => $viewer->id,
+    ]);
+});
+
+it('deletes a send by its id', function () {
+    $author = User::factory()->create();
+    $this->actingAs($author);
+
+    $send = $this->service->createSend([
+        'name' => 'My Secret',
+        'message' => 'top secret',
+        'expire_after' => '1 day',
+        'viewers' => [],
+    ]);
+
+    expect($this->service->deleteSend($send->id))->toBeTrue();
+
+    $this->assertDatabaseMissing('sends', [
+        'id' => $send->id,
     ]);
 });

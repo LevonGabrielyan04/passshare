@@ -3,7 +3,7 @@
 use App\Models\Send;
 use App\Models\User;
 use App\Services\Interfaces\SendReadServiceInterface;
-use App\Services\Interfaces\SendServiceInterface;
+use App\Services\Interfaces\SendWriteServiceInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -96,7 +96,7 @@ it('loads authorized users when finding a single send', function () {
     $viewer = User::factory()->create();
     $this->actingAs($author);
 
-    $send = app(SendServiceInterface::class)->createSend([
+    $send = app(SendWriteServiceInterface::class)->createSend([
         'name' => 'Shared Send',
         'message' => 'secret',
         'expire_after' => '1 day',

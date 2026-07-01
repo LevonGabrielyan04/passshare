@@ -2,7 +2,7 @@
 
 use App\Models\Send;
 use App\Models\User;
-use App\Services\Interfaces\SendServiceInterface;
+use App\Services\Interfaces\SendWriteServiceInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -26,7 +26,7 @@ it('lists sends belonging to the authenticated user', function () {
 
     $this->actingAs($author);
 
-    $send = app(SendServiceInterface::class)->createSend([
+    $send = app(SendWriteServiceInterface::class)->createSend([
         'name' => 'My Secret',
         'message' => fakeEncryptedMessage(),
         'expire_after' => '1 day',
