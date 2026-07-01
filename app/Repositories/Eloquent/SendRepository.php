@@ -50,12 +50,8 @@ class SendRepository implements SendRepositoryInterface
     private function fillSend(SendData $data, ?Send $send = null): Send
     {
         $send ??= $this->model->newInstance();
-        $sendWithUserId = [
-            ...$data->toArray(),
-            'user_id' => auth()->id(),
-        ];
 
-        return $send->fill($sendWithUserId);
+        return $send->fill($data->toArray());
     }
 
     public function update(string $id, SendData $data, array $pivotData = []): Send
@@ -103,5 +99,22 @@ class SendRepository implements SendRepositoryInterface
         return $this->model->query()
             ->where('valid_to', '<', now())
             ->delete();
+    }
+
+    public function countActiveForUser(string $userId): int
+    {
+        return $this->model->query()
+            ->where('user_id', $userId)
+            ->where('valid_to', '>=', now())
+            ->count();
+    }
+
+    public function userHasActiveAuthorizedAccess(string $userId, string $sendId): bool
+    {
+        return $this->model->query()
+            ->where('id', BinaryCodec::encode($sendId, 'ulid'))
+            ->where('valid_to', '>=', now())
+            ->whereHas('authorizedUsers', fn ($query) => $query->where('users.id', $userId))
+            ->exists();
     }
 }

@@ -5,12 +5,14 @@ namespace App\Policies;
 use App\Models\Send;
 use App\Models\User;
 use App\Policies\Traits\HandlesPolicyResponses;
+use App\Services\Interfaces\SendReadServiceInterface;
 use Illuminate\Auth\Access\Response;
-use Illuminate\Support\BinaryCodec;
 
 class SendPolicy
 {
     use HandlesPolicyResponses;
+
+    public function __construct(private SendReadServiceInterface $sendReadService) {}
 
     /**
      * Determine whether the user can view any models.
@@ -25,10 +27,7 @@ class SendPolicy
      */
     public function create(User $user): Response
     {
-        $activeSendCount = Send::query()
-            ->where('user_id', $user->id)
-            ->where('valid_to', '>=', now())
-            ->count();
+        $activeSendCount = $this->sendReadService->countActiveForUser($user->id);
 
         $maxSends = config('send.max_per_user');
 
@@ -47,11 +46,8 @@ class SendPolicy
         }
 
         return $this->sendResponse(
-            $send->user_id === $user->id ||
-            $user->authorizedSends()
-                ->where('sends.id', BinaryCodec::encode($send->id, 'ulid'))
-                ->where('valid_to', '>=', now())
-                ->exists()
+            $this->isOwner($user, $send) ||
+            $this->sendReadService->userHasActiveAuthorizedAccess($user->id, $send->id)
         );
     }
 

@@ -31,4 +31,14 @@ class SendReadService implements SendReadServiceInterface
             return $send;
         });
     }
+
+    public function countActiveForUser(int|string $userId): int
+    {
+        return $this->sendRepository->countActiveForUser((string) $userId);
+    }
+
+    public function userHasActiveAuthorizedAccess(int|string $userId, string $sendId): bool
+    {
+        return $this->sendRepository->userHasActiveAuthorizedAccess((string) $userId, $sendId);
+    }
 }

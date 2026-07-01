@@ -52,4 +52,14 @@ interface SendRepositoryInterface
      * Permanently delete all sends whose validity has expired.
      */
     public function deleteExpired(): int;
+
+    /**
+     * Count sends that are still valid for the given user.
+     */
+    public function countActiveForUser(string $userId): int;
+
+    /**
+     * Determine whether the user is authorized to view the given active send.
+     */
+    public function userHasActiveAuthorizedAccess(string $userId, string $sendId): bool;
 }

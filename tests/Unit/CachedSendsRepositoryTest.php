@@ -357,6 +357,10 @@ it('create stores the send in cache and invalidates the user send list cache', f
         ->once()
         ->with(sendsListCacheKey($userId, $columns));
 
+    $cache->shouldReceive('forget')
+        ->once()
+        ->with("active_sends_count_{$userId}");
+
     $result = $repository->create($sendData);
 
     expect($result)->toBe($send);
@@ -374,6 +378,11 @@ it('update refreshes the send cache and invalidates the user send list cache', f
     );
 
     [$repository, $innerRepository, $cache] = makeCachedRepository();
+
+    $innerRepository->shouldReceive('find')
+        ->once()
+        ->with($send->id)
+        ->andReturn($send);
 
     $innerRepository->shouldReceive('update')
         ->once()
@@ -395,6 +404,10 @@ it('update refreshes the send cache and invalidates the user send list cache', f
     $cache->shouldReceive('forget')
         ->once()
         ->with(sendsListCacheKey($userId, $columns));
+
+    $cache->shouldReceive('forget')
+        ->once()
+        ->with("active_sends_count_{$userId}");
 
     $result = $repository->update($send->id, $sendData);
 
@@ -424,6 +437,10 @@ it('delete invalidates send and user list caches before deleting from the inner 
     $cache->shouldReceive('forget')
         ->once()
         ->with(sendsListCacheKey($userId, $columns));
+
+    $cache->shouldReceive('forget')
+        ->once()
+        ->with("active_sends_count_{$userId}");
 
     $innerRepository->shouldReceive('delete')
         ->once()
@@ -469,6 +486,16 @@ it('deleteExpired invalidates send and user list caches before deleting expired 
         ->once()
         ->andReturn($expired);
 
+    $innerRepository->shouldReceive('find')
+        ->once()
+        ->with($expiredSend->id)
+        ->andReturn($expiredSend);
+
+    $innerRepository->shouldReceive('find')
+        ->once()
+        ->with($otherExpiredSend->id)
+        ->andReturn($otherExpiredSend);
+
     $cache->shouldReceive('forget')
         ->once()
         ->with("send_{$expiredSend->id}");
@@ -480,6 +507,9 @@ it('deleteExpired invalidates send and user list caches before deleting expired 
         ->with(sendsListCacheKey('1', $columns));
     $cache->shouldReceive('forget')
         ->once()
+        ->with('active_sends_count_1');
+    $cache->shouldReceive('forget')
+        ->once()
         ->with("send_{$otherExpiredSend->id}");
     $cache->shouldReceive('forget')
         ->once()
@@ -487,6 +517,9 @@ it('deleteExpired invalidates send and user list caches before deleting expired 
     $cache->shouldReceive('forget')
         ->once()
         ->with(sendsListCacheKey('2', $columns));
+    $cache->shouldReceive('forget')
+        ->once()
+        ->with('active_sends_count_2');
 
     $innerRepository->shouldReceive('deleteExpired')
         ->once()
@@ -638,4 +671,132 @@ it('findAll expires list cache immediately when any send valid_to is in the past
         );
 
     $repository->findAll($userId, $columns);
+});
+
+it('countActiveForUser caches the count from the inner repository', function () {
+    $userId = '42';
+    $cacheKey = "active_sends_count_{$userId}";
+    $send = makeSend(userId: (int) $userId);
+    $send->valid_to = now()->addDay();
+    $collection = new Collection([$send]);
+
+    [$repository, $innerRepository, $cache] = makeCachedRepository();
+
+    $cache->shouldReceive('get')
+        ->once()
+        ->with($cacheKey)
+        ->andReturnNull();
+
+    $innerRepository->shouldReceive('countActiveForUser')
+        ->once()
+        ->with($userId)
+        ->andReturn(1);
+
+    $cache->shouldReceive('get')
+        ->once()
+        ->with(sendsListCacheKey($userId, ['valid_to']))
+        ->andReturnNull();
+
+    $innerRepository->shouldReceive('findAll')
+        ->once()
+        ->with($userId, ['valid_to'])
+        ->andReturn($collection);
+
+    $cache->shouldReceive('put')
+        ->once()
+        ->with(
+            sendsListCacheKey($userId, ['valid_to']),
+            [serializeSend($send)],
+            Mockery::type(DateTimeInterface::class)
+        );
+
+    $cache->shouldReceive('put')
+        ->once()
+        ->with(
+            $cacheKey,
+            1,
+            Mockery::type(DateTimeInterface::class)
+        );
+
+    expect($repository->countActiveForUser($userId))->toBe(1);
+});
+
+it('countActiveForUser returns cached count without querying the inner repository', function () {
+    $userId = '42';
+    $cacheKey = "active_sends_count_{$userId}";
+
+    [$repository, $innerRepository, $cache] = makeCachedRepository();
+
+    $cache->shouldReceive('get')
+        ->once()
+        ->with($cacheKey)
+        ->andReturn(2);
+
+    $innerRepository->shouldNotReceive('countActiveForUser');
+
+    expect($repository->countActiveForUser($userId))->toBe(2);
+});
+
+it('userHasActiveAuthorizedAccess caches the result from the inner repository', function () {
+    $userId = '42';
+    $sendId = (string) Str::ulid();
+    $cacheKey = "active_authorized_access_{$userId}_{$sendId}";
+    $send = makeSend(id: $sendId, userId: (int) $userId);
+
+    [$repository, $innerRepository, $cache] = makeCachedRepository();
+
+    $cache->shouldReceive('get')
+        ->once()
+        ->with($cacheKey)
+        ->andReturnNull();
+
+    $innerRepository->shouldReceive('userHasActiveAuthorizedAccess')
+        ->once()
+        ->with($userId, $sendId)
+        ->andReturnTrue();
+
+    $cache->shouldReceive('get')
+        ->once()
+        ->with("send_{$sendId}")
+        ->andReturnNull();
+
+    $innerRepository->shouldReceive('find')
+        ->once()
+        ->with($sendId)
+        ->andReturn($send);
+
+    $cache->shouldReceive('put')
+        ->once()
+        ->with(
+            "send_{$sendId}",
+            serializeSend($send),
+            Mockery::type(DateTimeInterface::class)
+        );
+
+    $cache->shouldReceive('put')
+        ->once()
+        ->with(
+            $cacheKey,
+            true,
+            Mockery::type(DateTimeInterface::class)
+        );
+
+    expect($repository->userHasActiveAuthorizedAccess($userId, $sendId))->toBeTrue();
+});
+
+it('userHasActiveAuthorizedAccess returns cached result without querying the inner repository', function () {
+    $userId = '42';
+    $sendId = (string) Str::ulid();
+    $cacheKey = "active_authorized_access_{$userId}_{$sendId}";
+
+    [$repository, $innerRepository, $cache] = makeCachedRepository();
+
+    $cache->shouldReceive('get')
+        ->once()
+        ->with($cacheKey)
+        ->andReturnTrue();
+
+    $innerRepository->shouldNotReceive('userHasActiveAuthorizedAccess');
+
+    expect($repository->userHasActiveAuthorizedAccess($userId, $sendId))->toBeTrue();
 });

@@ -56,6 +56,25 @@ it('returns an empty collection when the user has no sends', function () {
     expect($sends)->toBeEmpty();
 });
 
+it('persists the user id from SendData without relying on auth', function () {
+    $owner = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $this->actingAs($otherUser);
+
+    $sendData = new SendData(
+        userId: $owner->id,
+        message: 'secret',
+        name: 'Owner Send',
+        validTo: now()->addDay(),
+        id: (string) Str::ulid(),
+    );
+
+    $send = $this->repository->create($sendData);
+
+    expect($send->user_id)->toBe($owner->id);
+});
+
 it('throws when updating a send that does not exist', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -150,4 +169,157 @@ it('deletes a send by its ulid', function () {
 
     expect($this->repository->delete($send->id))->toBeTrue()
         ->and($this->repository->find($send->id))->toBeNull();
+});
+
+it('counts only active sends for the given user', function () {
+    $author = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    Send::forceCreate([
+        'user_id' => $author->id,
+        'message' => 'active one',
+        'name' => 'Active Send',
+        'valid_to' => now()->addDay(),
+    ]);
+    Send::forceCreate([
+        'user_id' => $author->id,
+        'message' => 'expired',
+        'name' => 'Expired Send',
+        'valid_to' => now()->subMinute(),
+    ]);
+    Send::forceCreate([
+        'user_id' => $otherUser->id,
+        'message' => 'other user',
+        'name' => 'Other User Send',
+        'valid_to' => now()->addDay(),
+    ]);
+
+    expect($this->repository->countActiveForUser((string) $author->id))->toBe(1);
+});
+
+it('caches active send counts by user id', function () {
+    $author = User::factory()->create();
+
+    Send::forceCreate([
+        'user_id' => $author->id,
+        'message' => 'secret one',
+        'name' => 'Active Send',
+        'valid_to' => now()->addDay(),
+    ]);
+
+    $repository = app(SendRepositoryInterface::class);
+    Cache::flush();
+
+    $count = $repository->countActiveForUser((string) $author->id);
+    $cacheKey = 'active_sends_count_'.$author->id;
+
+    expect($count)->toBe(1)
+        ->and(Cache::has($cacheKey))->toBeTrue();
+});
+
+it('invalidates active send count cache after creating a send', function () {
+    $author = User::factory()->create();
+    $cacheKey = 'active_sends_count_'.$author->id;
+
+    $repository = app(SendRepositoryInterface::class);
+    Cache::flush();
+
+    $this->actingAs($author);
+
+    $repository->countActiveForUser((string) $author->id);
+
+    expect(Cache::has($cacheKey))->toBeTrue();
+
+    app(SendWriteServiceInterface::class)->createSend([
+        'name' => 'New Send',
+        'message' => 'secret',
+        'expire_after' => '1 day',
+    ]);
+
+    expect(Cache::has($cacheKey))->toBeFalse();
+});
+
+it('returns true when a user is authorized to view an active send', function () {
+    $author = User::factory()->create();
+    $viewer = User::factory()->create();
+    $stranger = User::factory()->create();
+
+    $this->actingAs($author);
+
+    $send = app(SendWriteServiceInterface::class)->createSend([
+        'name' => 'Shared Send',
+        'message' => 'secret',
+        'expire_after' => '1 day',
+        'viewers' => [$viewer->name],
+    ]);
+
+    expect($this->repository->userHasActiveAuthorizedAccess((string) $viewer->id, $send->id))->toBeTrue()
+        ->and($this->repository->userHasActiveAuthorizedAccess((string) $stranger->id, $send->id))->toBeFalse();
+});
+
+it('returns false when a user is authorized but the send has expired', function () {
+    $author = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    $this->actingAs($author);
+
+    $send = app(SendWriteServiceInterface::class)->createSend([
+        'name' => 'Expired Shared Send',
+        'message' => 'secret',
+        'expire_after' => '1 day',
+        'viewers' => [$viewer->name],
+    ]);
+
+    $send->update(['valid_to' => now()->subMinute()]);
+
+    expect($this->repository->userHasActiveAuthorizedAccess((string) $viewer->id, $send->id))->toBeFalse();
+});
+
+it('caches active authorized access by user and send id', function () {
+    $author = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    $this->actingAs($author);
+
+    $send = app(SendWriteServiceInterface::class)->createSend([
+        'name' => 'Shared Send',
+        'message' => 'secret',
+        'expire_after' => '1 day',
+        'viewers' => [$viewer->name],
+    ]);
+
+    $repository = app(SendRepositoryInterface::class);
+    Cache::flush();
+
+    $hasAccess = $repository->userHasActiveAuthorizedAccess((string) $viewer->id, $send->id);
+    $cacheKey = "active_authorized_access_{$viewer->id}_{$send->id}";
+
+    expect($hasAccess)->toBeTrue()
+        ->and(Cache::has($cacheKey))->toBeTrue();
+});
+
+it('invalidates active authorized access cache after deleting a send', function () {
+    $author = User::factory()->create();
+    $viewer = User::factory()->create();
+
+    $this->actingAs($author);
+
+    $send = app(SendWriteServiceInterface::class)->createSend([
+        'name' => 'Shared Send',
+        'message' => 'secret',
+        'expire_after' => '1 day',
+        'viewers' => [$viewer->name],
+    ]);
+
+    $repository = app(SendRepositoryInterface::class);
+    Cache::flush();
+
+    $repository->userHasActiveAuthorizedAccess((string) $viewer->id, $send->id);
+    $cacheKey = "active_authorized_access_{$viewer->id}_{$send->id}";
+
+    expect(Cache::has($cacheKey))->toBeTrue();
+
+    $repository->delete($send->id);
+
+    expect(Cache::has($cacheKey))->toBeFalse();
 });

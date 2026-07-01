@@ -84,6 +84,7 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
         $send = $this->repository->create($data, $pivotData);
         $this->cache->put("send_{$send->id}", $this->serializeSend($send), $this->cacheExpiresAt($send));
         $this->forgetUserSends((string) $send->user_id, SendIndexColumns::COLUMNS);
+        $this->forgetActiveSendsCount((string) $send->user_id);
 
         return $send;
     }
@@ -93,9 +94,13 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
      */
     public function update(string $id, SendData $data, array $pivotData = []): Send
     {
+        $sendBefore = $this->repository->find($id);
         $result = $this->repository->update($id, $data, $pivotData);
         $this->cache->put("send_{$id}", $this->serializeSend($result), $this->cacheExpiresAt($result));
         $this->forgetUserSends((string) $result->user_id, SendIndexColumns::COLUMNS);
+        $this->forgetActiveSendsCount((string) $result->user_id);
+        $this->forgetActiveAuthorizedAccessForSend($sendBefore);
+        $this->forgetActiveAuthorizedAccessForSend($result);
 
         return $result;
     }
@@ -110,6 +115,8 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
 
         if ($send !== null) {
             $this->forgetUserSends((string) $send->user_id, SendIndexColumns::COLUMNS);
+            $this->forgetActiveSendsCount((string) $send->user_id);
+            $this->forgetActiveAuthorizedAccessForSend($send);
         }
 
         return $this->repository->delete($id);
@@ -130,6 +137,8 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
         foreach ($expired as $send) {
             $this->cache->forget("send_{$send->id}");
             $this->forgetUserSends((string) $send->user_id, SendIndexColumns::COLUMNS);
+            $this->forgetActiveSendsCount((string) $send->user_id);
+            $this->forgetActiveAuthorizedAccessForSend($this->repository->find($send->id));
         }
 
         if ($expired->isEmpty()) {
@@ -137,6 +146,52 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
         }
 
         return $this->repository->deleteExpired();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countActiveForUser(string $userId): int
+    {
+        $cacheKey = $this->activeSendsCountCacheKey($userId);
+        $cached = $this->cache->get($cacheKey);
+
+        if (is_int($cached)) {
+            return $cached;
+        }
+
+        $count = $this->repository->countActiveForUser($userId);
+
+        $this->cache->put(
+            $cacheKey,
+            $count,
+            $this->cacheExpiresAtForActiveCount($userId),
+        );
+
+        return $count;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function userHasActiveAuthorizedAccess(string $userId, string $sendId): bool
+    {
+        $cacheKey = $this->activeAuthorizedAccessCacheKey($userId, $sendId);
+        $cached = $this->cache->get($cacheKey);
+
+        if (is_bool($cached)) {
+            return $cached;
+        }
+
+        $hasAccess = $this->repository->userHasActiveAuthorizedAccess($userId, $sendId);
+        $send = $this->find($sendId);
+        $expiresAt = $send !== null
+            ? $this->cacheExpiresAt($send)
+            : now()->addMinutes($this->cacheTtl);
+
+        $this->cache->put($cacheKey, $hasAccess, $expiresAt);
+
+        return $hasAccess;
     }
 
     private function cacheExpiresAt(Send $send): CarbonInterface
@@ -165,6 +220,21 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
         return $expiresAt;
     }
 
+    private function cacheExpiresAtForActiveCount(string $userId): CarbonInterface
+    {
+        $expiresAt = now()->addMinutes($this->cacheTtl);
+
+        foreach ($this->findAll($userId, ['valid_to']) as $send) {
+            if (Carbon::parse($send->valid_to)->isPast()) {
+                continue;
+            }
+
+            $expiresAt = $this->cacheExpiresAt($send)->min($expiresAt);
+        }
+
+        return $expiresAt;
+    }
+
     /**
      * @param  array<int, string>  $columns
      */
@@ -186,6 +256,37 @@ readonly class CachedSendsRepository implements SendRepositoryInterface
     {
         $this->cache->forget("sends_{$userId}");
         $this->cache->forget($this->sendsCacheKey($userId, $columns));
+    }
+
+    private function activeSendsCountCacheKey(string $userId): string
+    {
+        return "active_sends_count_{$userId}";
+    }
+
+    private function forgetActiveSendsCount(string $userId): void
+    {
+        $this->cache->forget($this->activeSendsCountCacheKey($userId));
+    }
+
+    private function activeAuthorizedAccessCacheKey(string $userId, string $sendId): string
+    {
+        return "active_authorized_access_{$userId}_{$sendId}";
+    }
+
+    private function forgetActiveAuthorizedAccess(string $userId, string $sendId): void
+    {
+        $this->cache->forget($this->activeAuthorizedAccessCacheKey($userId, $sendId));
+    }
+
+    private function forgetActiveAuthorizedAccessForSend(?Send $send): void
+    {
+        if ($send === null || ! $send->relationLoaded('authorizedUsers')) {
+            return;
+        }
+
+        foreach ($send->authorizedUsers as $user) {
+            $this->forgetActiveAuthorizedAccess((string) $user->id, $send->id);
+        }
     }
 
     /**
