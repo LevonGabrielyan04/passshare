@@ -34,6 +34,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Pulse Admin Email
+    |--------------------------------------------------------------------------
+    |
+    | Users with this verified email address may access the Pulse dashboard
+    | in production via the viewPulse gate.
+    |
+    */
+
+    'admin_email' => env('PULSE_ADMIN_EMAIL', 'levongabrielyan44@gmail.com'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Pulse Master Switch
     |--------------------------------------------------------------------------
     |

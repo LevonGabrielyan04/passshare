@@ -62,7 +62,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('viewPulse', function (User $user) {
             return ! is_null($user->email_verified_at)
-                && $user->email === 'levongabrielyan44@gmail.com';
+                && $user->email === config('pulse.admin_email');
         });
     }
 

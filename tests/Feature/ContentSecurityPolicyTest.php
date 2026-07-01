@@ -145,7 +145,7 @@ it('does not add content security policy headers to pulse pages', function () {
     config(['app.url' => 'https://example.test']);
 
     $user = User::factory()->create([
-        'email' => 'levongabrielyan44@gmail.com',
+        'email' => config('pulse.admin_email'),
         'email_verified_at' => now(),
     ]);
 
