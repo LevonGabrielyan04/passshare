@@ -68,5 +68,6 @@ it('shows a delete button on the dashboard for sends the user owns', function ()
         ->get(route('dashboard'))
         ->assertOk()
         ->assertSee(route('sends.destroy', $send), false)
+        ->assertSee(__('Are you sure you want to delete this send?'), false)
         ->assertSee('title="'.__('Delete').'"', false);
 });

@@ -75,22 +75,15 @@
                                                 </button>
                                             </span>
                                             @can('forceDelete', $send)
-                                                <form
-                                                    method="POST"
-                                                    action="{{ route('sends.destroy', $send) }}"
-                                                    class="inline-flex"
-                                                    onsubmit="return confirm(@js(__('Are you sure you want to delete this send?')))"
-                                                >
-                                                    @csrf
-                                                    @method('DELETE')
+                                                <flux:modal.trigger name="delete-send-{{ $send->id }}">
                                                     <button
-                                                        type="submit"
+                                                        type="button"
                                                         class="inline-flex cursor-pointer text-zinc-500 transition-colors hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400"
                                                         title="{{ __('Delete') }}"
                                                     >
                                                         <flux:icon.trash variant="outline" class="size-4" />
                                                     </button>
-                                                </form>
+                                                </flux:modal.trigger>
                                             @endcan
                                         </div>
                                     </td>
@@ -100,6 +93,35 @@
                     </table>
                 </div>
             </flux:card>
+
+            @foreach ($sends as $send)
+                @can('forceDelete', $send)
+                    <flux:modal name="delete-send-{{ $send->id }}" class="max-w-md">
+                        <form method="POST" action="{{ route('sends.destroy', $send) }}" class="space-y-6">
+                            @csrf
+                            @method('DELETE')
+
+                            <div class="space-y-2">
+                                <flux:heading size="lg">{{ __('Are you sure you want to delete this send?') }}</flux:heading>
+
+                                <flux:text>
+                                    {{ __('This action cannot be undone.') }}
+                                </flux:text>
+                            </div>
+
+                            <div class="flex justify-end gap-2">
+                                <flux:modal.close>
+                                    <flux:button variant="filled">{{ __('Cancel') }}</flux:button>
+                                </flux:modal.close>
+
+                                <flux:button variant="danger" type="submit">
+                                    {{ __('Yes') }}
+                                </flux:button>
+                            </div>
+                        </form>
+                    </flux:modal>
+                @endcan
+            @endforeach
         @endif
     </div>
 </x-layouts::app>
