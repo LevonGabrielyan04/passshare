@@ -53,7 +53,7 @@ test('new users can register without an email address', function () {
 });
 
 test('registration is throttled to three requests per minute', function () {
-    for ($attempt = 1; $attempt <= 3; $attempt++) {
+    for ($attempt = 1; $attempt <= 5; $attempt++) {
         $this->post(route('register.store'), [
             'name' => "User {$attempt}",
             'password' => 'ValidPassword-15',

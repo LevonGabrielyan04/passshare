@@ -95,7 +95,7 @@ test('login rejects submissions without a turnstile token when enabled', functio
     fakeTurnstileVerification();
 
     $response = $this->post(route('login.store'), [
-        'email' => $user->email,
+        'login' => $user->email,
         'password' => 'password',
     ]);
 
@@ -109,7 +109,7 @@ test('login rejects submissions when turnstile verification fails', function () 
     fakeTurnstileVerification(success: false);
 
     $response = $this->post(route('login.store'), [
-        'email' => $user->email,
+        'login' => $user->email,
         'password' => 'password',
         'cf-turnstile-response' => 'invalid-token',
     ]);
@@ -124,7 +124,7 @@ test('login succeeds when turnstile verification passes', function () {
     fakeTurnstileVerification();
 
     $response = $this->post(route('login.store'), [
-        'email' => $user->email,
+        'login' => $user->email,
         'password' => 'password',
         'cf-turnstile-response' => 'valid-token',
     ]);
