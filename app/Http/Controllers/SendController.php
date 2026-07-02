@@ -23,7 +23,7 @@ class SendController extends Controller implements HasMiddleware
         return [
             new Middleware(['throttle:sends-index'], only: ['index']),
             new Middleware(['can:create,App\Models\Send'], only: ['create']),
-            new Middleware(['throttle:sends-write', 'turnstile', 'can:create,App\Models\Send'], only: ['store']),
+            new Middleware(['throttle:sends-write', 'can:create,App\Models\Send'], only: ['store']),
             new Middleware('can:view,send', only: ['show']),
             new Middleware('can:forceDelete,send', only: ['destroy']),
         ];

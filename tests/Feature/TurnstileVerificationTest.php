@@ -2,6 +2,8 @@
 
 use App\Models\User;
 use App\Services\TurnstileVerifier;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Features;
 
 test('registration screen includes turnstile when enabled', function () {
@@ -133,11 +135,12 @@ test('login succeeds when turnstile verification passes', function () {
     $this->assertAuthenticated();
 });
 
-test('send create screen includes turnstile when enabled', function () {
-    $user = User::factory()->create();
+test('forgot password screen includes turnstile when enabled', function () {
+    $this->skipUnlessFortifyHas(Features::resetPasswords());
+
     enableTurnstileForTests();
 
-    $response = $this->actingAs($user)->get(route('sends.create'));
+    $response = $this->get(route('password.request'));
 
     $response
         ->assertOk()
@@ -147,56 +150,50 @@ test('send create screen includes turnstile when enabled', function () {
         ->assertSee('nonce="', false);
 });
 
-test('send creation rejects submissions without a turnstile token when enabled', function () {
-    $author = User::factory()->create();
-    $viewer = User::factory()->create();
+test('forgot password rejects submissions without a turnstile token when enabled', function () {
+    $this->skipUnlessFortifyHas(Features::resetPasswords());
+
+    $user = User::factory()->create();
     enableTurnstileForTests();
     fakeTurnstileVerification();
 
-    $response = $this->actingAs($author)
-        ->post(route('sends.store'), [
-            'name' => 'My Secret',
-            'message' => fakeEncryptedMessage(),
-            'expire_after' => '1 day',
-            'viewers' => [$viewer->name],
-        ]);
+    $response = $this->post(route('password.email'), [
+        'email' => $user->email,
+    ]);
 
     $response->assertSessionHasErrors('cf-turnstile-response');
 });
 
-test('send creation rejects submissions when turnstile verification fails', function () {
-    $author = User::factory()->create();
-    $viewer = User::factory()->create();
+test('forgot password rejects submissions when turnstile verification fails', function () {
+    $this->skipUnlessFortifyHas(Features::resetPasswords());
+
+    $user = User::factory()->create();
     enableTurnstileForTests();
     fakeTurnstileVerification(success: false);
 
-    $response = $this->actingAs($author)
-        ->post(route('sends.store'), withTurnstileToken([
-            'name' => 'My Secret',
-            'message' => fakeEncryptedMessage(),
-            'expire_after' => '1 day',
-            'viewers' => [$viewer->name],
-        ], token: 'invalid-token'));
+    $response = $this->post(route('password.email'), withTurnstileToken([
+        'email' => $user->email,
+    ], token: 'invalid-token'));
 
     $response->assertSessionHasErrors('cf-turnstile-response');
 });
 
-test('send creation succeeds when turnstile verification passes', function () {
-    $author = User::factory()->create();
-    $viewer = User::factory()->create();
+test('forgot password succeeds when turnstile verification passes', function () {
+    $this->skipUnlessFortifyHas(Features::resetPasswords());
+
+    Notification::fake();
+
+    $user = User::factory()->create();
     enableTurnstileForTests();
     fakeTurnstileVerification();
 
-    $response = $this->actingAs($author)
-        ->post(route('sends.store'), withTurnstileToken([
-            'name' => 'My Secret',
-            'message' => fakeEncryptedMessage(),
-            'expire_after' => '1 day',
-            'viewers' => [$viewer->name],
-        ]));
+    $response = $this->post(route('password.email'), withTurnstileToken([
+        'email' => $user->email,
+    ]));
 
-    $response->assertRedirect(route('dashboard'))
-        ->assertSessionHasNoErrors();
+    $response->assertSessionHasNoErrors();
+
+    Notification::assertSentTo($user, ResetPassword::class);
 });
 
 test('turnstile verifier skips validation when disabled', function () {

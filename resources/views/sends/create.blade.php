@@ -173,8 +173,6 @@
 
                 <x-send-encryption-indicator />
 
-                <x-turnstile />
-
                 <button
                     type="submit"
                     class="inline-flex w-full items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"

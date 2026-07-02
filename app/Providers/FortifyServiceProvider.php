@@ -133,7 +133,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $this->app->booted(function (): void {
             $this->app->booted(function (): void {
-                foreach (['register.store', 'login.store'] as $routeName) {
+                foreach (['register.store', 'login.store', 'password.email'] as $routeName) {
                     $route = Route::getRoutes()->getByName($routeName);
 
                     if ($route === null) {
