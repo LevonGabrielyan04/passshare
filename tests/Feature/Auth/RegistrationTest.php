@@ -52,7 +52,7 @@ test('new users can register without an email address', function () {
         ->and($user->hasVerifiedEmail())->toBeTrue();
 });
 
-test('registration is throttled to three requests per minute', function () {
+test('registration is throttled to five requests per minute', function () {
     for ($attempt = 1; $attempt <= 5; $attempt++) {
         $this->post(route('register.store'), [
             'name' => "User {$attempt}",
