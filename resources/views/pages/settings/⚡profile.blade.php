@@ -21,7 +21,7 @@ new #[Title('Profile settings')] class extends Component {
     public function mount(): void
     {
         $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
+        $this->email = Auth::user()->email ?? '';
     }
 
     /**
@@ -86,7 +86,7 @@ new #[Title('Profile settings')] class extends Component {
             <flux:input wire:model="name" :label="__('Nickname')" type="text" required autofocus autocomplete="name" />
 
             <div>
-                <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
+                <flux:input wire:model="email" :label="__('Email (optional)')" type="email" autocomplete="email" />
 
                 @if ($this->hasUnverifiedEmail)
                     <div>

@@ -32,6 +32,8 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+        $this->configureRegistrationRateLimiting();
+        $this->configureTurnstileProtectedRoutes();
         $this->configureEmailVerificationRoute();
     }
 
@@ -106,7 +108,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())));
 
             return Limit::perMinute(5)->by($throttleKey);
         });
@@ -115,8 +117,58 @@ class FortifyServiceProvider extends ServiceProvider
             $credentialId = $request->input('credential.id');
 
             return Limit::perMinute(10)->by(
-                ($credentialId ?: $request->session()->getId()).'|'.$request->ip(),
+                ($credentialId ?: $request->session()->getId()),
             );
+        });
+
+        RateLimiter::for('registration', function (Request $request) {
+            return Limit::perMinute(3)->by($request->ip());
+        });
+    }
+
+    /**
+     * Require Turnstile verification for protected Fortify submissions.
+     */
+    private function configureTurnstileProtectedRoutes(): void
+    {
+        $this->app->booted(function (): void {
+            $this->app->booted(function (): void {
+                foreach (['register.store', 'login.store'] as $routeName) {
+                    $route = Route::getRoutes()->getByName($routeName);
+
+                    if ($route === null) {
+                        continue;
+                    }
+
+                    $route->middleware('turnstile');
+                }
+            });
+        });
+    }
+
+    /**
+     * Apply registration rate limiting to Fortify registration routes.
+     */
+    private function configureRegistrationRateLimiting(): void
+    {
+        $limiter = config('fortify.limiters.registration');
+
+        if ($limiter === null) {
+            return;
+        }
+
+        $this->app->booted(function () use ($limiter): void {
+            $this->app->booted(function () use ($limiter): void {
+                foreach (['register', 'register.store'] as $routeName) {
+                    $route = Route::getRoutes()->getByName($routeName);
+
+                    if ($route === null) {
+                        continue;
+                    }
+
+                    $route->middleware('throttle:'.$limiter);
+                }
+            });
         });
     }
 }

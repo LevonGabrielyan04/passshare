@@ -1,6 +1,6 @@
 <x-layouts::auth :title="__('Register')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Create an account')" :description="__('Enter your details below to create your account')" />
+        <x-auth-header :title="__('Create an account')" :description="__('Enter your nickname and password below. Email is optional.')" />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -22,10 +22,10 @@
             <!-- Email Address -->
             <flux:input
                 name="email"
-                :label="__('Email address')"
+                :label="__('Email address (optional)')"
+                :description="__('Optional. Add an email if you want password recovery and email-based features.')"
                 :value="old('email')"
                 type="email"
-                required
                 autocomplete="email"
                 placeholder="email@example.com"
             />
@@ -53,6 +53,8 @@
                 passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
                 viewable
             />
+
+            <x-turnstile />
 
             <div class="flex items-center justify-end">
                 <flux:button type="submit" variant="primary" class="w-full" data-test="register-user-button">

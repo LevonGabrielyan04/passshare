@@ -147,6 +147,25 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        syncTurnstileResponse(originalForm, clonedForm) {
+            const turnstileResponse = originalForm.querySelector('[name="cf-turnstile-response"]');
+
+            if (!turnstileResponse) {
+                return;
+            }
+
+            let clonedTurnstileResponse = clonedForm.querySelector('[name="cf-turnstile-response"]');
+
+            if (!clonedTurnstileResponse) {
+                clonedTurnstileResponse = document.createElement('input');
+                clonedTurnstileResponse.type = 'hidden';
+                clonedTurnstileResponse.name = 'cf-turnstile-response';
+                clonedForm.appendChild(clonedTurnstileResponse);
+            }
+
+            clonedTurnstileResponse.value = turnstileResponse.value;
+        },
+
         /**
          * Handles form submission. Pending viewer names are committed first,
          * then the message is optionally encrypted off-thread before the cloned
@@ -233,6 +252,8 @@ document.addEventListener('alpine:init', () => {
             }
 
             passwordInput?.remove();
+
+            this.syncTurnstileResponse(originalForm, form);
 
             form.style.display = 'none';
             document.body.appendChild(form);

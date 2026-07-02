@@ -22,13 +22,13 @@ class StrictPolicyPreset implements Preset
             ->add(Directive::CONNECT, $this->connectSources())
             ->add(Directive::FONT, $origins)
             ->add(Directive::FORM_ACTION, $origins)
-            ->add(Directive::FRAME, Keyword::NONE)
+            ->add(Directive::FRAME, $this->frameSources())
             ->add(Directive::FRAME_ANCESTORS, Keyword::NONE)
             ->add(Directive::IMG, $origins)
             ->add(Directive::MANIFEST, $origins)
             ->add(Directive::MEDIA, $origins)
             ->add(Directive::OBJECT, Keyword::NONE)
-            ->add(Directive::SCRIPT, [...$origins, Keyword::UNSAFE_WEB_ASSEMBLY_EXECUTION])
+            ->add(Directive::SCRIPT, $this->scriptSources($origins))
             ->add(Directive::STYLE, $origins)
             ->add(Directive::WORKER, [...$origins, Scheme::BLOB])
             ->addNonce(Directive::SCRIPT)
@@ -47,10 +47,42 @@ class StrictPolicyPreset implements Preset
         $origins = ApplicationOrigins::webAuthn();
 
         if (in_array(config('app.env'), ['local', 'testing'])) {
-            $origins = [...$origins, ...$this->localDevAppOrigins(), ...$this->viteDevOrigins()];
+            $origins = [
+                ...$origins,
+                ...$this->localDevAppOrigins(),
+                ...$this->viteDevOrigins(),
+                ...$this->loopbackViteDevOrigins(),
+            ];
         }
 
         return array_values(array_unique($origins));
+    }
+
+    /**
+     * @param  list<string>  $origins
+     * @return list<string|Keyword>
+     */
+    private function scriptSources(array $origins): array
+    {
+        $sources = [...$origins, Keyword::UNSAFE_WEB_ASSEMBLY_EXECUTION];
+
+        if (config('turnstile.enabled')) {
+            $sources[] = 'https://challenges.cloudflare.com';
+        }
+
+        return $sources;
+    }
+
+    /**
+     * @return list<string|Keyword>
+     */
+    private function frameSources(): array
+    {
+        if (config('turnstile.enabled')) {
+            return ['https://challenges.cloudflare.com'];
+        }
+
+        return [Keyword::NONE];
     }
 
     /**
@@ -64,7 +96,15 @@ class StrictPolicyPreset implements Preset
         ];
 
         if (in_array(config('app.env'), ['local', 'testing'])) {
-            $sources = [...$sources, ...$this->viteDevWebSocketOrigins()];
+            $sources = [
+                ...$sources,
+                ...$this->viteDevWebSocketOrigins(),
+                ...$this->loopbackViteDevWebSocketOrigins(),
+            ];
+        }
+
+        if (config('turnstile.enabled')) {
+            $sources[] = 'https://challenges.cloudflare.com';
         }
 
         return array_values(array_unique($sources));
@@ -158,5 +198,60 @@ class StrictPolicyPreset implements Preset
     private function viteDevPorts(): array
     {
         return [5173];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function loopbackViteDevOrigins(): array
+    {
+        if (! $this->shouldAllowLoopbackViteOrigins()) {
+            return [];
+        }
+
+        $origins = [];
+
+        foreach ($this->viteDevPorts() as $port) {
+            $origins[] = "http://127.0.0.1:{$port}";
+            $origins[] = "http://localhost:{$port}";
+        }
+
+        return $origins;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function loopbackViteDevWebSocketOrigins(): array
+    {
+        if (! $this->shouldAllowLoopbackViteOrigins()) {
+            return [];
+        }
+
+        $origins = [];
+
+        foreach ($this->viteDevPorts() as $port) {
+            $origins[] = "ws://127.0.0.1:{$port}";
+            $origins[] = "ws://localhost:{$port}";
+        }
+
+        return $origins;
+    }
+
+    private function shouldAllowLoopbackViteOrigins(): bool
+    {
+        if (! in_array(config('app.env'), ['local', 'testing'], true)) {
+            return false;
+        }
+
+        $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+
+        if (is_string($appHost) && $this->isLoopbackHost($appHost)) {
+            return true;
+        }
+
+        $requestHost = request()->getHost();
+
+        return $requestHost !== '' && $this->isLoopbackHost($requestHost);
     }
 }

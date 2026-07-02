@@ -46,7 +46,7 @@ trait ProfileValidationRules
     protected function emailRules(?int $userId = null): array
     {
         return [
-            'required',
+            'nullable',
             'string',
             'email',
             'max:255',

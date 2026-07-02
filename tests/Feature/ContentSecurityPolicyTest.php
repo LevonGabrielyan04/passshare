@@ -41,11 +41,15 @@ it('allows the vite dev server origin when running locally', function () {
     expect($policy)
         ->toContain('http://localhost')
         ->toContain('http://127.0.0.1')
+        ->toContain('http://127.0.0.1:5173')
+        ->toContain('http://localhost:5173')
         ->toContain("https://{$herdHost}")
         ->toContain("https://vite.{$herdHost}:5173")
         ->toContain("https://{$herdHost}:5173")
         ->toContain("wss://vite.{$herdHost}:5173")
         ->toContain("wss://{$herdHost}:5173")
+        ->toContain('ws://127.0.0.1:5173')
+        ->toContain('ws://localhost:5173')
         ->toContain('worker-src http://localhost http://127.0.0.1')
         ->toContain('blob:');
 });
@@ -89,6 +93,36 @@ it('allows the have i been pwned passwords api for connect sources', function ()
     expect($policy)
         ->toContain('connect-src')
         ->toContain('https://api.pwnedpasswords.com');
+});
+
+it('allows cloudflare turnstile sources when turnstile is enabled', function () {
+    config([
+        'app.url' => 'https://example.test',
+        'turnstile.enabled' => true,
+    ]);
+
+    $policy = Policy::create([StrictPolicyPreset::class])->getContents();
+
+    expect($policy)
+        ->toContain('script-src')
+        ->toContain('frame-src https://challenges.cloudflare.com')
+        ->toContain('connect-src')
+        ->toContain('https://challenges.cloudflare.com');
+
+    expect(substr_count($policy, 'https://challenges.cloudflare.com'))->toBeGreaterThanOrEqual(3);
+});
+
+it('does not allow loopback vite origins when the app url is not loopback', function () {
+    config([
+        'app.url' => 'https://example.test',
+        'app.env' => 'local',
+    ]);
+
+    $policy = Policy::create([StrictPolicyPreset::class])->getContents();
+
+    expect($policy)
+        ->not->toContain('127.0.0.1:5173')
+        ->not->toContain('localhost:5173');
 });
 
 it('adds upgrade-insecure-requests when the app url uses https', function () {

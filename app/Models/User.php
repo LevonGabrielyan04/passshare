@@ -20,7 +20,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 /**
  * @property int $id
  * @property string $name
- * @property string $email
+ * @property string|null $email
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -48,6 +48,18 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Determine if the user has verified their email address.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        if ($this->email === null) {
+            return true;
+        }
+
+        return $this->email_verified_at !== null;
     }
 
     /**

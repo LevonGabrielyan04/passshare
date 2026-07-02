@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\VerifyTurnstile;
 use App\Support\Csp\AddCspHeaders;
 use App\Support\Csp\PrepareCspNonce;
 use Illuminate\Console\Scheduling\Schedule;
@@ -17,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(PrepareCspNonce::class);
         $middleware->append(AddCspHeaders::class);
+        $middleware->alias([
+            'turnstile' => VerifyTurnstile::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

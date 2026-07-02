@@ -52,6 +52,29 @@ function fakeUncompromisedPasswordChecks(): void
     ]);
 }
 
+function fakeTurnstileVerification(bool $success = true): void
+{
+    Http::fake([
+        'challenges.cloudflare.com/turnstile/v0/siteverify' => Http::response([
+            'success' => $success,
+        ]),
+    ]);
+}
+
+function enableTurnstileForTests(): void
+{
+    config([
+        'turnstile.site_key' => '1x00000000000000000AA',
+        'turnstile.secret_key' => '1x0000000000000000000000000000000AA',
+        'turnstile.enabled' => true,
+    ]);
+}
+
+function withTurnstileToken(array $payload, string $token = 'valid-token'): array
+{
+    return [...$payload, 'cf-turnstile-response' => $token];
+}
+
 /**
  * Build a client-side encrypted message payload for HTTP tests.
  */
